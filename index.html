@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#12141a">
+<title>Projet Janvier</title>
+<style>
+:root{--bg:#12141a;--cd:#1c1f27;--c2:#272b36;--tx:#eef0f5;--mu:#8b91a1;--ac:#6c8cff;--ok:#5fd38d;--rd:#ff5d5d;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+#app{max-width:520px;margin:0 auto;padding:16px 16px 130px}
+h1{font-size:30px;margin:10px 0 2px;letter-spacing:-.02em}h2{font-size:21px;margin:4px 0 10px}
+.mu{color:var(--mu);font-size:14px}
+.card{background:var(--cd);border-radius:20px;padding:16px;margin:12px 0}
+button{font:inherit;color:var(--tx);border:0;border-radius:14px;min-height:54px;padding:0 16px;background:var(--c2);cursor:pointer;width:100%;margin-top:8px}
+button:active{transform:scale(.98)}
+button.p{background:var(--ac);color:#0a0d18;font-weight:700}
+button.g{background:transparent;color:var(--mu)}
+button.d{background:var(--rd);color:#1a0505;font-weight:700}
+button.sess{display:flex;justify-content:space-between;align-items:center;text-align:left;min-height:76px;background:var(--cd);border:2px solid transparent;border-radius:20px;margin:10px 0}
+button.sess.rec{border-color:var(--ac)}
+button.sess em{font-style:normal;color:var(--ac);font-size:13px;font-weight:700;margin-left:8px}
+.row{display:flex;gap:10px;align-items:center}.row button{margin:0}
+.row .sm{width:64px;flex:none}
+input[type=number]{width:100%;height:54px;background:var(--c2);color:var(--tx);border:0;border-radius:14px;font:inherit;font-size:22px;font-weight:600;text-align:center}
+input:focus-visible,button:focus-visible{outline:2px solid var(--ac)}
+.set{display:grid;grid-template-columns:70px 1fr 64px;gap:10px;align-items:center;margin:10px 0}
+.set.done input{color:var(--ok)}
+.set .chk{margin:0;font-size:24px}
+.set.done .chk{background:var(--ok);color:#06180d}
+.media{text-align:center}.media a{color:var(--ac);font-size:14px}
+.bar{animation:ud 3s ease-in-out infinite}
+@keyframes ud{0%,100%{transform:translateY(0)}60%{transform:translateY(-24px)}}
+@media(prefers-reduced-motion:reduce){.bar{animation:none}}
+ul.l{padding-left:20px;margin:6px 0}ul.l li{margin:8px 0}
+#rest{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));background:#2a2f3d;border-radius:22px;padding:12px;display:none;gap:10px;align-items:center;box-shadow:0 8px 30px #0009}
+#rest.on{display:flex}#rest.done{animation:fl .5s 6 alternate}
+@keyframes fl{to{background:var(--ok);color:#06180d}}
+#rest button{margin:0;width:auto;flex:1}#rt{flex:1.3;font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;padding-left:6px}
+#modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;z-index:9}
+#modal.on{display:flex}#modal .box{background:var(--cd);border-radius:24px;padding:20px;width:min(92%,420px)}
+#toast{position:fixed;top:calc(10px + env(safe-area-inset-top));left:12px;right:12px;max-width:496px;margin:auto;background:#fff;color:#111;padding:12px 16px;border-radius:16px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s;z-index:10}
+#toast.on{opacity:1}
+</style></head><body>
+<div id="app"></div>
+<div id="rest"><span id="rt"></span><button onclick="add()">+15 s</button><button class="p" onclick="skipT()">Passer</button></div>
+<div id="modal"></div><div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),K='pj_state',B='lastBackup';
+// [nom, séries, reps min, reps max, repos (s), alternative, pas de charge (kg)]
+const P=[
+{id:1,t:'Upper A',k:'u',x:[
+['Développé couché haltères (ou barre)',3,6,8,180,'Machine convergente pecs',2.5],
+['Tirage vertical poulie haute',3,8,10,120,'Tractions assistées',5],
+['Développé incliné haltères',3,8,10,120,'Machine pecs inclinée',2.5],
+['Rowing assis poulie basse',3,8,10,120,'Rowing unilatéral haltère',5],
+['Élévations latérales haltères',3,8,10,90,'Élévations poulie',2.5],
+['Superset bras 1/2 : Curl EZ',3,8,10,90,'',2.5],
+['Superset bras 2/2 : Extension triceps poulie corde',3,8,10,90,'',5]]},
+{id:2,t:'Lower',k:'l',x:[
+['Presse à cuisses ou Hack Squat',3,8,10,180,'Squat guidé (Smith machine)',5],
+['Soulevé de terre jambes tendues (RDL) haltères',3,8,10,120,'Leg curl assis',2.5],
+['Leg extension machine',3,8,10,90,'Fentes marchées haltères',5],
+['Leg curl assis ou allongé',3,8,10,90,'RDL haltères',5],
+['Mollets à la presse ou debout',3,10,12,60,'',5],
+['Relevé de jambes suspendu ou cable crunch',3,10,12,60,'',5]]},
+{id:3,t:'Push',k:'u',x:[
+['Développé militaire assis haltères',3,6,8,180,'Développé épaules machine',2.5],
+['Écarté poulie vis-à-vis (ou pec deck)',3,8,10,90,'Écarté couché haltères',5],
+['Dips (assistés ou PDV)',3,8,10,120,'Développé couché prise serrée',2.5],
+['Élévations latérales poulie basse',3,8,10,90,'Élévations latérales haltères',2.5],
+['Extension triceps overhead poulie',3,8,10,90,'Barre au front',2.5],
+['Extension triceps barre droite poulie',3,8,10,90,'Extension triceps corde',5]]},
+{id:4,t:'Pull',k:'u',x:[
+['Rowing buste penché ou unilatéral haltère',3,6,8,180,'Rowing poulie basse',2.5],
+['Tractions assistées ou tirage poitrine',3,8,10,120,'Tirage vertical prise serrée',5],
+['Oiseau poulie vis-à-vis ou pec deck inversé',3,8,10,90,'Oiseau haltères',5],
+['Facepull poulie haute',3,10,10,90,'',5],
+['Curl incliné haltères',3,8,10,90,'Curl poulie basse',2.5],
+['Curl marteau haltères ou corde poulie',3,8,10,90,'Curl marteau haltères',2.5]]},
+{id:5,t:'Rappel bras / épaules',k:'u',x:[
+['Élévations latérales haltères / machine',3,10,10,90,'',2.5],
+['Curl pupitre / Larry Scott barre EZ',3,8,10,90,'',2.5],
+['Barre au front (skullcrusher)',3,8,10,90,'',2.5],
+['Écarté décliné poulie',3,10,10,90,'',5],
+['Curl marteau poulie',3,10,10,90,'',5],
+['Crunchs poulie ou gainage',3,12,12,60,'',5]]}];
+const W={u:['Rotations d’épaules bras tendus : 2 × 10','Cercles de bras avant puis arrière : 2 × 10','Rotations du tronc : 10 par côté','Band pull-apart ou pompes lentes : 10','1 à 2 séries légères du 1er exercice (~50 % de la charge)'],
+l:['Cercles de hanches : 10 par côté','Balanciers de jambe avant / côté : 10 par jambe','Squat au poids du corps : 15','Fentes dynamiques : 8 par jambe','1 à 2 séries légères du 1er exercice (~50 % de la charge)']};
+const C={u:['Pecs au mur : 30 s par côté','Dorsaux (mains sur un support, buste vers le bas) : 30 s','Épaules (bras croisé devant) : 30 s par côté','Triceps (coude derrière la tête) : 30 s par côté','Biceps (bras tendu contre le mur) : 30 s par côté'],
+l:['Quadriceps debout : 30 s par côté','Ischio-jambiers jambe tendue : 30 s par côté','Fessiers (position du 4) : 30 s par côté','Mollets contre le mur : 30 s par côté','Fléchisseurs de hanche (fente basse) : 30 s par côté']};
+
+let st=load(),view='home',sum=[];
+function load(){let s=null;try{s=JSON.parse(localStorage.getItem(K))}catch(e){}
+ s=s||{};return{h:s.h||{},log:s.log||[],act:s.act||null}}
+function save(){try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}}
+function hasData(){return st.log.length||Object.keys(st.h).length||st.act}
+function backup(){if(hasData())try{localStorage.setItem(B,JSON.stringify({ts:Date.now(),data:st}))}catch(e){}}
+function bkOK(){try{const b=JSON.parse(localStorage.getItem(B));if(b&&Date.now()-b.ts<864e5)return b;localStorage.removeItem(B)}catch(e){}return null}
+const fd=t=>new Date(t).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+const last=n=>(st.h[n]||[]).slice(-1)[0];
+function recId(){const l=[...st.log].reverse().find(e=>e.sid<5);return l?l.sid%4+1:1}
+function prog(w,r,hi,s,sets){
+ if(r.length<sets||r.some(x=>x<hi))return{n:w,m:'Poids maintenu pour la prochaine séance.'};
+ if(Math.max(...r)>=hi+2)return{n:w+2*s,m:'Charge trop légère détectée ! Augmentation recommandée pour la prochaine fois : +'+2*s+' kg (ou +2 paliers)'};
+ return{n:w+s,m:'Objectif atteint : +'+s+' kg (+1 palier) la prochaine fois.'}}
+
+function go(v){view=v;render();scrollTo(0,0)}
+function render(){
+ const a=st.act;let h;
+ if(view=='set')h=settings();else if(view=='sum')h=summary();
+ else if(view=='run'&&a)h=a.ph=='warm'?warm():a.ph=='cool'?cool():exo();
+ else{view='home';h=home()}
+ $('#app').innerHTML=h}
+
+function home(){
+ const rec=recId(),a=st.act,bk=bkOK();
+ return `<h1>Projet Janvier</h1><div class="mu">Choisis ta séance du jour</div>
+ ${bk?`<div class="card"><b>Données réinitialisées</b><div class="mu">Restauration possible jusqu’au ${new Date(bk.ts+864e5).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})}</div><button class="p" onclick="restore()">Annuler le dernier Reset / Restaurer les données</button></div>`:''}
+ ${a?`<div class="card"><b>Séance en cours : ${P[a.sid-1].t}</b><button class="p" onclick="go('run')">Reprendre la séance</button><button class="g" onclick="askQuit()">Abandonner la séance</button></div>`:''}
+ ${P.map(s=>{const l=[...st.log].reverse().find(e=>e.sid==s.id);
+ return `<button class="sess${s.id==rec?' rec':''}" onclick="start(${s.id})"><span><b>${s.id==5?'Bonus':'Séance '+s.id} : ${s.t}</b>${s.id==5?' (optionnelle)':''}<br><span class="mu">${s.x.length} exercices, ${l?'dernière fois le '+fd(l.d):'jamais faite'}</span></span>${s.id==rec?'<em>Recommandée</em>':''}</button>`}).join('')}
+ <button class="g" onclick="go('set')">Sauvegarde et données</button>
+ <button class="g" style="color:var(--rd)" onclick="askReset()">Réinitialiser l’application</button>`}
+
+function start(id){
+ if(st.act&&st.act.sid!=id)return modal('Remplacer la séance en cours ?','La progression de la séance en cours sera perdue.','Remplacer',()=>start2(id));
+ if(st.act)return go('run');start2(id)}
+function start2(id){
+ st.act={sid:id,q:P[id-1].x.map(e=>({n:e[0],s:e[1],lo:e[2],hi:e[3],rest:e[4],a:e[5],st:e[6]})),i:0,ph:'warm',cur:null,msgs:[]};
+ save();go('run')}
+function askQuit(){modal('Abandonner la séance ?','Les exercices déjà validés restent enregistrés dans l’historique.','Abandonner',()=>{st.act=null;save();go('home')},'d')}
+function list(a){return '<ul class="l">'+a.map(x=>`<li>${x}</li>`).join('')+'</ul>'}
+function warm(){const a=st.act,s=P[a.sid-1];
+ return `<div class="mu">${s.t}</div><h1>Échauffement</h1><div class="card"><b>Étirements dynamiques</b>${list(W[s.k])}</div>
+ <button class="p" onclick="beginEx()">Commencer l’exercice 1</button><button class="g" onclick="askQuit()">Abandonner</button>`}
+function beginEx(){st.act.ph='ex';initCur();save();render();scrollTo(0,0)}
+function initCur(){const a=st.act,e=a.q[a.i],l=last(e.n);a.cur={w:l?l.n:'',r:Array(e.s).fill(''),d:Array(e.s).fill(false)}}
+
+const FIG='<svg viewBox="0 0 200 90" width="100%" height="104" aria-hidden="true"><g class="bar"><rect x="40" y="38" width="120" height="6" rx="3" fill="#8b91a1"/><rect x="28" y="20" width="12" height="42" rx="4" fill="#6c8cff"/><rect x="160" y="20" width="12" height="42" rx="4" fill="#6c8cff"/><rect x="17" y="30" width="11" height="22" rx="3" fill="#4966d6"/><rect x="172" y="30" width="11" height="22" rx="3" fill="#4966d6"/></g></svg>';
+function exo(){
+ const a=st.act,e=a.q[a.i],c=a.cur,l=last(e.n),all=c.d.every(Boolean);
+ return `<div class="mu">Exercice ${a.i+1} sur ${a.q.length}, ${P[a.sid-1].t}</div><h2>${e.n}</h2>
+ <div class="card media">${FIG}<div class="mu">Descente contrôlée (2-3 s), montée explosive. Cible : ${e.s} × ${e.lo==e.hi?e.lo:e.lo+'-'+e.hi} reps, repos ${e.rest} s.</div><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.n+' technique')}" target="_blank" rel="noopener">Voir la technique en vidéo</a></div>
+ <div class="card">${l?`<div class="mu">Séance précédente (${fd(l.d)})</div><b>${l.w} kg × ${l.r.join(', ')}</b><div class="mu" style="margin-top:4px">${l.n>l.w?'Objectif du jour : '+l.n+' kg':'Objectif du jour : garder '+l.n+' kg'}</div>`:`<b>Première fois : séance de calibrage</b><div class="mu">Choisis une charge qui te met proche de l’échec à ${e.hi} reps.</div>`}</div>
+ <div class="card"><div class="mu">Charge (kg)</div><div class="row" style="margin-top:6px"><button class="sm" onclick="dw(-1)" aria-label="Moins">−</button><input type="number" inputmode="decimal" step="0.5" value="${c.w}" oninput="st.act.cur.w=this.value;save()" aria-label="Charge en kg"><button class="sm" onclick="dw(1)" aria-label="Plus">+</button></div>
+ ${c.r.map((r,i)=>`<div class="set${c.d[i]?' done':''}"><b>Série ${i+1}</b><input type="number" inputmode="numeric" placeholder="${e.lo==e.hi?e.lo:e.lo+'-'+e.hi} reps" value="${r}" ${c.d[i]?'readonly':''} oninput="st.act.cur.r[${i}]=this.value;save()" aria-label="Répétitions série ${i+1}"><button class="chk" onclick="tg(${i})" aria-label="Valider la série">${c.d[i]?'✓':'○'}</button></div>`).join('')}</div>
+ <button onclick="busy()">Machine occupée ?</button>
+ <button class="${all?'p':''}" onclick="finishEx()">${all?(a.i<a.q.length-1?'Exercice suivant':'Passer aux étirements'):'Valider l’exercice (séries restantes ignorées)'}</button>`}
+function dw(d){const a=st.act,e=a.q[a.i],c=a.cur;c.w=Math.max(0,Math.round(((+c.w||0)+d*e.st)*100)/100);save();render()}
+function tg(i){const a=st.act,e=a.q[a.i],c=a.cur;
+ if(c.d[i]){c.d[i]=false;save();return render()}
+ if(c.w===''||isNaN(+c.w))return toast('Entre la charge (0 si poids du corps)');
+ if(!(+c.r[i]>0))return toast('Entre le nombre de reps réalisées');
+ c.d[i]=true;save();render();rest(e.rest)}
+function busy(){const e=st.act.q[st.act.i];
+ modalH(`<h2>Machine occupée ?</h2>${e.a?`<button class="p" onclick="cm();swap()">Basculer sur : ${e.a}</button>`:''}<button onclick="cm();skip()">Passer l’exercice et le mettre à la fin</button><button class="g" onclick="cm()">Annuler</button>`)}
+function swap(){const a=st.act,e=a.q[a.i];
+ if(a.cur.d.some(Boolean))return toast('Séries déjà commencées : valide l’exercice d’abord');
+ [e.n,e.a]=[e.a,e.n];initCur();save();render()}
+function skip(){const a=st.act;
+ if(a.i>=a.q.length-1)return toast('C’est le dernier exercice : impossible de le repousser');
+ a.q.push(a.q.splice(a.i,1)[0]);initCur();save();render();toast('Exercice déplacé en fin de séance')}
+function finishEx(){const a=st.act,e=a.q[a.i],c=a.cur;
+ const reps=c.r.filter((r,i)=>c.d[i]).map(Number);
+ if(reps.length){const w=+c.w||0,p=prog(w,reps,e.hi,e.st,e.s);
+  (st.h[e.n]=st.h[e.n]||[]).push({d:Date.now(),w,r:reps,n:p.n,m:p.m});a.msgs.push(e.n+' : '+reps.join(', ')+' à '+w+' kg. '+p.m);toast(p.m,4500)}
+ if(a.i<a.q.length-1){a.i++;initCur()}else a.ph='cool';
+ save();render();scrollTo(0,0)}
+function cool(){const s=P[st.act.sid-1];
+ return `<div class="mu">${s.t}</div><h1>Étirements passifs</h1><div class="card"><b>Garde chaque position sans rebond</b>${list(C[s.k])}</div><button class="p" onclick="endSess()">Terminer la séance</button>`}
+function endSess(){const a=st.act;sum=a.msgs;st.log.push({sid:a.sid,d:Date.now()});st.act=null;save();go('sum')}
+function summary(){return `<h1>Séance terminée</h1><div class="mu">Bravo, tout est enregistré.</div><div class="card">${sum.length?list(sum):'<span class="mu">Aucun exercice validé.</span>'}</div><button class="p" onclick="go('home')">Retour à l’accueil</button>`}
+
+// Chrono de repos
+let tEnd=0,ti,to,ac;
+const mmss=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+function rest(s){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(e){}
+ clearTimeout(to);clearInterval(ti);tEnd=Date.now()+s*1e3;$('#rest').className='on';ti=setInterval(tick,200);tick()}
+function tick(){const r=Math.ceil((tEnd-Date.now())/1e3);
+ if(r>0)return $('#rt').textContent=mmss(r);
+ clearInterval(ti);$('#rt').textContent='GO !';$('#rest').className='on done';beep();
+ navigator.vibrate&&navigator.vibrate([300,100,300]);to=setTimeout(skipT,5000)}
+function add(){clearTimeout(to);clearInterval(ti);tEnd=Math.max(tEnd,Date.now())+15e3;$('#rest').className='on';ti=setInterval(tick,200);tick()}
+function skipT(){clearTimeout(to);clearInterval(ti);$('#rest').className=''}
+function beep(){try{[0,.25,.5].forEach((t,i)=>{const o=ac.createOscillator(),g=ac.createGain(),n=ac.currentTime+t;
+ o.frequency.value=i==2?1100:880;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.25,n);o.start(n);o.stop(n+.15)})}catch(e){}}
+
+// Modale, toast
+function modalH(h){const m=$('#modal');m.innerHTML=`<div class="box">${h}</div>`;m.className='on'}
+function cm(){$('#modal').className=''}
+function modal(t,p,ok,fn,cls){modalH(`<h2>${t}</h2><p class="mu">${p}</p><button class="${cls||'p'}" id="mo">${ok}</button><button class="g" onclick="cm()">Annuler</button>`);$('#mo').onclick=()=>{cm();fn()}}
+let tt;function toast(t,ms){const e=$('#toast');e.textContent=t;e.className='on';clearTimeout(tt);tt=setTimeout(()=>e.className='',ms||2400)}
+
+// Sauvegarde, reset
+function settings(){const bk=bkOK();
+ return `<h1>Sauvegarde et données</h1><div class="mu">Tout est stocké dans ce navigateur. Exporte régulièrement un fichier de secours.</div>
+ <div class="card"><button class="p" onclick="exp()">Exporter la sauvegarde (JSON)</button>
+ <button onclick="$('#f').click()">Importer une sauvegarde</button><input id="f" type="file" accept=".json,application/json" hidden onchange="imp(this.files[0]);this.value=''"></div>
+ ${bk?`<div class="card"><b>Dernier reset annulable</b><div class="mu">Jusqu’au ${new Date(bk.ts+864e5).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})}</div><button class="p" onclick="restore()">Annuler le dernier Reset / Restaurer les données</button></div>`:''}
+ <button class="d" style="margin-top:20px" onclick="askReset()">Réinitialiser l’application</button><button class="g" onclick="go('home')">Retour</button>`}
+function exp(){const b=new Blob([JSON.stringify({app:'projet-janvier',v:1,data:st},null,1)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');
+ a.href=u;a.download='projet-janvier-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1e3);toast('Sauvegarde exportée')}
+function imp(f){if(!f)return;const r=new FileReader();
+ r.onload=()=>{let d;try{const j=JSON.parse(r.result);d=j.data||j;if(!d||typeof d.h!='object'||!Array.isArray(d.log))throw 0}catch(e){return toast('Fichier invalide')}
+  modal('Importer cette sauvegarde ?','Les données actuelles seront remplacées. Une copie de secours reste restaurable pendant 24 h.','Importer',()=>{backup();st={h:d.h,log:d.log,act:d.act||null};save();go('home');toast('Sauvegarde importée')})};
+ r.readAsText(f)}
+function askReset(){modal('Tout effacer ?','Historique, charges et séance en cours seront supprimés. Tu pourras annuler pendant 24 h.','Oui, tout effacer',()=>{backup();st={h:{},log:[],act:null};save();skipT();go('home');toast('Application réinitialisée')},'d')}
+function restore(){const b=bkOK();if(!b)return toast('Plus de sauvegarde disponible');
+ st={h:b.data.h||{},log:b.data.log||[],act:b.data.act||null};save();try{localStorage.removeItem(B)}catch(e){}go('home');toast('Données restaurées')}
+render();
+</script></body></html>
